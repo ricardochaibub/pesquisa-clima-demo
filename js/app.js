@@ -609,6 +609,11 @@ async function iniciar() {
   mostrarPasso(false);
 }
 
+// Ao responder uma pergunta que estava destacada como faltando, o destaque some.
+app.addEventListener('change', (e) => {
+  e.target.closest('.pergunta-faltando')?.classList.remove('pergunta-faltando');
+});
+
 window.addEventListener('beforeunload', (e) => {
   if (!enviado && temAlgumaResposta()) e.preventDefault();
 });
