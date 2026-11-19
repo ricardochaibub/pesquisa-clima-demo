@@ -244,6 +244,17 @@ h1:focus { outline: none; }
   border: 1px solid var(--linha);
   border-radius: var(--raio);
 }
+
+/* pergunta obrigatória que ficou sem resposta ao tocar em "Continuar" */
+.pergunta-faltando { border-color: var(--erro); box-shadow: 0 0 0 1px var(--erro); }
+.pergunta-faltando .pergunta-titulo::after {
+  content: "Obrigatória";
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--erro);
+}
 .pergunta-titulo, .pergunta > label {
   display: block;
   font-size: 20px;

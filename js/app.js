@@ -136,7 +136,7 @@ function conteudoAnonimato() {
 
 // ------------------------------------------------------------ componentes
 
-function campoEscala(pergunta, valores, rotulos, classe, pontas) {
+function campoEscala(pergunta, valores, rotulos, classe, pontas, obrigatoria = false) {
   const escolhida = h('p', { class: 'escolhida', 'aria-live': 'polite' });
   const mostrarEscolhida = () => {
     const v = respostas[pergunta.id];
@@ -151,8 +151,8 @@ function campoEscala(pergunta, valores, rotulos, classe, pontas) {
       checked: respostas[pergunta.id] === v,
     });
     input.addEventListener('click', () => {
-      if (respostas[pergunta.id] === v) {
-        input.checked = false;      // tocar de novo desmarca: toda pergunta é opcional
+      if (respostas[pergunta.id] === v && !obrigatoria) {
+        input.checked = false;      // pergunta opcional: tocar de novo desmarca
         delete respostas[pergunta.id];
       } else {
         respostas[pergunta.id] = v;
@@ -163,7 +163,7 @@ function campoEscala(pergunta, valores, rotulos, classe, pontas) {
   });
   mostrarEscolhida();
   const tituloId = `titulo-${pergunta.id}`;
-  return h('div', { class: 'pergunta', role: 'radiogroup', 'aria-labelledby': tituloId },
+  return h('div', { class: 'pergunta', role: 'radiogroup', 'aria-labelledby': tituloId, 'data-pergunta': pergunta.id },
     h('h2', { class: 'pergunta-titulo', id: tituloId }, pergunta.texto),
     h('div', { class: `escala ${classe}` }, opcoes),
     h('div', { class: 'escala-pontas', 'aria-hidden': 'true' }, h('span', null, pontas[0]), h('span', null, pontas[1])),
@@ -195,14 +195,17 @@ function campoPalavras(pergunta) {
     return h('label', { class: 'palavra' }, input, h('span', null, opcao.rotulo));
   });
   atualizar();
-  return h('div', { class: `pergunta palavras-${pergunta.polaridade}`, role: 'group', 'aria-labelledby': tituloId },
+  const ajuda = pergunta.minimo
+    ? `Escolha de ${pergunta.minimo} a ${pergunta.maximo}.`
+    : `Escolha até ${pergunta.maximo}. Se nenhuma combinar, é só deixar em branco.`;
+  return h('div', { class: `pergunta palavras-${pergunta.polaridade}`, role: 'group', 'aria-labelledby': tituloId, 'data-pergunta': pergunta.id },
     h('h2', { class: 'pergunta-titulo', id: tituloId }, pergunta.texto),
-    h('p', { class: 'ajuda' }, `Escolha até ${pergunta.maximo}. Se nenhuma combinar, é só deixar em branco.`),
+    h('p', { class: 'ajuda' }, ajuda),
     h('div', { class: 'palavras' }, chips),
     contador);
 }
 
-function campoPergunta(pergunta, comAviso = false) {
+function campoPergunta(pergunta, comAviso = false, obrigatoria = false) {
   if (pergunta.tipo === 'palavras') return campoPalavras(pergunta);
   if (pergunta.tipo === 'enps') {
     const rotulo = (v) => (v <= 6 ? 'não recomendaria' : v <= 8 ? 'talvez recomendasse' : 'recomendaria');
@@ -211,7 +214,7 @@ function campoPergunta(pergunta, comAviso = false) {
   }
   if (pergunta.tipo === 'escala') {
     return campoEscala(pergunta, [1, 2, 3, 4, 5], (v) => cfg.escala[v - 1], '',
-      [`1 · ${cfg.escala[0]}`, `5 · ${cfg.escala[4]}`]);
+      [`1 · ${cfg.escala[0]}`, `5 · ${cfg.escala[4]}`], obrigatoria);
   }
   const id = `campo-${pergunta.id}`;
   const contador = h('span', { class: 'contador' });
@@ -266,6 +269,24 @@ function montarPassos() {
   return [{ tipo: 'abertura' }, ...blocos, { tipo: 'perfil' }];
 }
 
+// Obrigatórias: as afirmações de 1 a 5 dos blocos marcados com "obrigatorio" e as listas
+// de palavras com "minimo". Nota de recomendação, comentários e perfil seguem opcionais.
+function ehObrigatoria(bloco, pergunta) {
+  if (pergunta.tipo === 'escala') return Boolean(bloco.obrigatorio);
+  if (pergunta.tipo === 'palavras') return (pergunta.minimo || 0) > 0;
+  return false;
+}
+
+function perguntasFaltando(atual) {
+  if (atual.tipo !== 'bloco') return [];
+  return atual.bloco.perguntas.filter((p) => {
+    if (!ehObrigatoria(atual.bloco, p)) return false;
+    const valor = respostas[p.id];
+    if (p.tipo === 'palavras') return !Array.isArray(valor) || valor.length < p.minimo;
+    return valor == null;
+  });
+}
+
 function conteudoDoPasso(atual) {
   if (atual.tipo === 'abertura') {
     return [
@@ -280,7 +301,7 @@ function conteudoDoPasso(atual) {
         h('ul', { class: 'lista' },
           itemLista('sim', 'sim', 'Não existe resposta certa ou errada.', 'Vale o que você vive no dia a dia.'),
           itemLista('sim', 'sim', 'Críticas são bem-vindas.', 'É para ouvir o que incomoda que esta pesquisa existe.'),
-          itemLista('sim', 'sim', 'Pule o que quiser.', 'Todas as perguntas são opcionais.'),
+          itemLista('sim', 'sim', 'Palavras e notas de 1 a 5 são obrigatórias.', 'O restante (recomendação, comentários e perfil) você responde se quiser.'),
           itemLista('sim', 'sim', 'Você vai ver o resultado.', `Os resultados consolidados serão compartilhados com todo mundo até ${dataPorExtenso(cfg.devolutiva)}.`))),
       h('section', { class: 'cartao' },
         h('h2', null, 'A pesquisa é anônima'),
@@ -297,9 +318,10 @@ function conteudoDoPasso(atual) {
       h('h1', { tabindex: '-1' }, bloco.titulo),
       h('p', { class: 'subtitulo' }, bloco.descricao),
       temEscala
-        ? h('p', { class: 'dica-pular' }, `De 1 (${cfg.escala[0].toLowerCase()}) a 5 (${cfg.escala[4].toLowerCase()}). Toque de novo em uma nota para desmarcar.`)
+        ? h('p', { class: 'dica-pular' }, `De 1 (${cfg.escala[0].toLowerCase()}) a 5 (${cfg.escala[4].toLowerCase()}). ${
+          bloco.obrigatorio ? 'Todas as afirmações desta etapa são obrigatórias.' : 'Toque de novo em uma nota para desmarcar.'}`)
         : null,
-      ...bloco.perguntas.map((p) => campoPergunta(p, p === primeiraAberta)),
+      ...bloco.perguntas.map((p) => campoPergunta(p, p === primeiraAberta, ehObrigatoria(bloco, p))),
     ];
   }
   return [
@@ -328,6 +350,20 @@ function mostrarPasso(focar = true) {
     class: 'botao botao-principal',
     onclick: () => {
       if (ultimo) { enviar(avancar, erro); return; }
+      const faltando = perguntasFaltando(atual);
+      for (const el of app.querySelectorAll('.pergunta-faltando')) el.classList.remove('pergunta-faltando');
+      erro.hidden = true;
+      if (faltando.length) {
+        const cartoes = faltando.map((p) => app.querySelector(`[data-pergunta="${p.id}"]`));
+        for (const cartao of cartoes) cartao.classList.add('pergunta-faltando');
+        const soPalavras = faltando.every((p) => p.tipo === 'palavras');
+        if (soPalavras) erro.textContent = 'Escolha pelo menos uma palavra em cada lista para continuar.';
+        else if (faltando.length === 1) erro.textContent = 'Falta responder 1 afirmação desta etapa. Ela está destacada em vermelho.';
+        else erro.textContent = `Falta responder ${faltando.length} afirmações desta etapa. Elas estão destacadas em vermelho.`;
+        erro.hidden = false;
+        cartoes[0].scrollIntoView({ block: 'center' });
+        return;
+      }
       passo += 1;
       mostrarPasso();
     },
