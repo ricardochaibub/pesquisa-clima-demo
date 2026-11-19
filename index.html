@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR" data-demo="1">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#f7f5f0">
+  <title>Pesquisa de clima · Inner AI</title>
+  <link rel="icon" href="img/favicon.png">
+  <link rel="apple-touch-icon" href="img/icone.png">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <img class="logo" src="img/inner-ai.svg" alt="Inner AI" width="102" height="24">
+      <button type="button" class="selo" id="selo" aria-haspopup="dialog">
+        <svg class="selo-icone" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+          <path fill="currentColor" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V6H4a1.5 1.5 0 0 0-1.5 1.5v5A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 12 6h-.5V4.5A3.5 3.5 0 0 0 8 1Zm2 5H6V4.5a2 2 0 1 1 4 0V6Z"/>
+        </svg>
+        <span>Pesquisa 100% anônima</span>
+      </button>
+    </div>
+    <div class="progresso" id="progresso" hidden>
+      <div class="progresso-trilho" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progresso da pesquisa" id="progresso-barra">
+        <div class="progresso-preenchido" id="progresso-preenchido"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="faixa-teste" id="faixa-teste" hidden>
+    Modo de teste: as respostas enviadas agora não contam para a pesquisa de verdade.
+  </div>
+
+  <main id="app" class="pagina" aria-live="polite">
+    <p class="carregando">Carregando…</p>
+  </main>
+
+  <dialog class="dialogo" id="dialogo-anonimato" aria-labelledby="dialogo-titulo">
+    <div class="dialogo-topo">
+      <h2 id="dialogo-titulo">Como garantimos seu anonimato</h2>
+      <button type="button" class="botao-fechar" id="dialogo-fechar" aria-label="Fechar">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+          <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div id="dialogo-corpo"></div>
+  </dialog>
+
+  <noscript>
+    <p class="pagina">Esta pesquisa precisa de JavaScript para funcionar. Ative-o no seu navegador e recarregue a página.</p>
+  </noscript>
+
+  <script src="js/app.js" type="module"></script>
+</body>
+</html>
